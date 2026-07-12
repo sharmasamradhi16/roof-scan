@@ -1,0 +1,1 @@
+export const API_URL = 'https://suryadeep07-rooftop-segmentation.hf.space';

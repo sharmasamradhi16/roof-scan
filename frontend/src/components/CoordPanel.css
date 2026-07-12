@@ -1,0 +1,78 @@
+.coord-panel {
+  padding: 10px 14px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.coord-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.coord-field { display: flex; flex-direction: column; gap: 4px; }
+
+.coord-field label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+.coord-field input {
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 7px 8px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  border-radius: 5px;
+  width: 100%;
+  min-height: 34px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.coord-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(194,65,12,0.1);
+}
+
+.coord-hint { font-size: 9px; color: var(--text-muted); letter-spacing: 0.5px; text-align: center; font-family: var(--font-mono); }
+
+/* Tablet */
+@media (max-width: 800px) {
+  .coord-panel { padding: 7px 12px; gap: 6px; }
+  .coord-field input { font-size: 11px; padding: 6px 8px; min-height: 30px; }
+  .coord-field label { font-size: 7px; }
+  .coord-hint { display: none; }
+}
+
+/* Phone */
+@media (max-width: 480px) {
+  .coord-panel { padding: 6px 10px; gap: 5px; }
+  .coord-row   { gap: 6px; }
+  .coord-field input { font-size: 11px; padding: 5px 7px; min-height: 28px; }
+  .coord-field label { font-size: 7px; letter-spacing: 1px; }
+  .coord-hint  { display: none; }
+}
+
+/* Tiny */
+@media (max-width: 360px) {
+  .coord-panel { padding: 5px 8px; gap: 4px; }
+  .coord-row   { gap: 5px; }
+  .coord-field input { font-size: 10px; padding: 4px 6px; min-height: 26px; }
+  .coord-field label { font-size: 6px; }
+}
+
+/* Landscape */
+@media (max-height: 430px) and (max-width: 800px) {
+  .coord-panel { padding: 4px 10px; gap: 4px; }
+  .coord-field input { min-height: 24px; padding: 4px 6px; font-size: 10px; }
+}

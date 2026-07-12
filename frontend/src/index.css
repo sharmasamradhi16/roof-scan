@@ -1,0 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg:         #faf7f2;
+  --surface:    #f3ede3;
+  --surface2:   #ebe2d4;
+  --border:     #ddd0bc;
+  --accent:     #c2410c;
+  --accent2:    #15803d;
+  --text:       #1c1410;
+  --text-muted: #9c8472;
+  --danger:     #b91c1c;
+  --font-display: 'Playfair Display', serif;
+  --font-mono:    'DM Mono', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-mono);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.maplibregl-ctrl-group {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+}
+.maplibregl-ctrl-group button {
+  background: transparent !important;
+  color: var(--accent) !important;
+}
+.maplibregl-ctrl-attrib {
+  background: rgba(250,247,242,0.9) !important;
+  color: var(--text-muted) !important;
+  font-size: 9px !important;
+}
+.maplibregl-ctrl-scale {
+  background: rgba(250,247,242,0.9) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  font-size: 9px !important;
+}
