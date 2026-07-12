@@ -1,1 +1,1 @@
-export const API_URL = 'https://suryadeep07-rooftop-segmentation.hf.space';
+export const API_URL = import.meta.env.VITE_API_URL;
