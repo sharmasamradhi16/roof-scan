@@ -2,6 +2,7 @@ import os
 import sys
 import math
 import base64
+import contextlib
 import cv2
 import torch
 import requests
@@ -30,11 +31,22 @@ _predictor = None
 def get_predictor():
     global _predictor
     if _predictor is None:
-        print("\nLoading SAM ViT-B model...")
+        print(f"\nLoading SAM ViT-B model onto device: {DEVICE}")
+        if DEVICE != "cuda":
+            print("⚠️  WARNING: CUDA not available — falling back to CPU. "
+                  "Inference will be slow. Check your torch/CUDA install.")
+        else:
+            print(f"✅ Using GPU: {torch.cuda.get_device_name(0)}")
+            torch.backends.cudnn.benchmark = True   # autotune conv kernels for fixed 1024x1024 input
+            torch.backends.cuda.matmul.allow_tf32 = True
+            torch.backends.cudnn.allow_tf32 = True
+
         sam = sam_model_registry[MODEL_TYPE](checkpoint=None)
         state_dict = torch.load(WEIGHTS_PATH, map_location=DEVICE)
         sam.load_state_dict(state_dict)
         sam.to(device=DEVICE)
+        sam.eval()   # disable dropout/batchnorm updates — inference-only
+
         _predictor = SamPredictor(sam)
         print("Model ready ✅")
     return _predictor
@@ -85,16 +97,23 @@ def download_satellite_image(lat, lon):
     start_x      = xtile - tiles_needed // 2
     start_y      = ytile - tiles_needed // 2
 
-    for dx in range(tiles_needed):
-        for dy in range(tiles_needed):
-            url = (f"https://mt1.google.com/vt/lyrs=s"
-                   f"&x={start_x+dx}&y={start_y+dy}&z={ZOOM}")
-            r   = requests.get(url, timeout=10)
-            if r.status_code != 200:
-                raise RuntimeError(f"Tile download failed: {url}")
-            tile = cv2.imdecode(
-                np.frombuffer(r.content, np.uint8), cv2.IMREAD_COLOR
-            )
+    def fetch_tile(dx, dy):
+        url = (f"https://mt1.google.com/vt/lyrs=s"
+               f"&x={start_x+dx}&y={start_y+dy}&z={ZOOM}")
+        r   = requests.get(url, timeout=10)
+        if r.status_code != 200:
+            raise RuntimeError(f"Tile download failed: {url}")
+        tile = cv2.imdecode(
+            np.frombuffer(r.content, np.uint8), cv2.IMREAD_COLOR
+        )
+        return dx, dy, tile
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    coords = [(dx, dy) for dx in range(tiles_needed) for dy in range(tiles_needed)]
+    with ThreadPoolExecutor(max_workers=len(coords)) as ex:
+        futures = [ex.submit(fetch_tile, dx, dy) for dx, dy in coords]
+        for fut in as_completed(futures):
+            dx, dy, tile = fut.result()
             image[
                 dy * TILE_SIZE:(dy + 1) * TILE_SIZE,
                 dx * TILE_SIZE:(dx + 1) * TILE_SIZE
@@ -264,16 +283,34 @@ def snap_to_rectangle(polygon_latlon, ref_lat, ref_lon):
 
 def estimate_roof(lat: float, lon: float) -> dict:
     try:
+        import time
+        t0 = time.time()
+
         # 1. Download tiles — unchanged
         image = download_satellite_image(lat, lon)
+        t1 = time.time()
+        print(f"⏱️  Tile download: {t1 - t0:.2f}s")
 
         # 2. Get model — unchanged
         predictor = get_predictor()
+        t2 = time.time()
+        print(f"⏱️  Model load/fetch: {t2 - t1:.2f}s")
 
         # 3. Set image — unchanged
         print("Running inference...")
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        predictor.set_image(image_rgb)
+
+        # autocast -> lets cuDNN/cuBLAS pick FP16/TF32 tensor-core kernels
+        # on the Ada GPU for the encoder forward pass, without touching
+        # checkpoint weights or requiring input dtype changes.
+        autocast_ctx = (
+            torch.autocast(device_type="cuda", dtype=torch.float16)
+            if DEVICE == "cuda" else contextlib.nullcontext()
+        )
+        with torch.inference_mode(), autocast_ctx:
+            predictor.set_image(image_rgb)
+        t3 = time.time()
+        print(f"⏱️  set_image (encoder): {t3 - t2:.2f}s")
 
         # 4. Compute prompt pixel — unchanged
         xtile, ytile = latlon_to_tile(lat, lon, ZOOM)
@@ -294,12 +331,15 @@ def estimate_roof(lat: float, lon: float) -> dict:
         # 5. SAM predict — unchanged
         input_point = np.array([[prompt_x, prompt_y]])
         input_label = np.array([1])
-        masks, scores, logits = predictor.predict(
-            point_coords=input_point,
-            point_labels=input_label,
-            multimask_output=False,
-        )
+        with torch.inference_mode(), autocast_ctx:
+            masks, scores, logits = predictor.predict(
+                point_coords=input_point,
+                point_labels=input_label,
+                multimask_output=False,
+            )
         best_mask = masks[0]
+        t4 = time.time()
+        print(f"⏱️  predict (decoder): {t4 - t3:.2f}s")
 
         # 6. Refine — unchanged
         best_mask = refine_mask(best_mask)
@@ -323,6 +363,7 @@ def estimate_roof(lat: float, lon: float) -> dict:
         # 10. NEW: Extract polygon in lat/lon
         polygon = mask_to_polygon(best_mask, lat, lon, epsilon_factor=0.005)
         print(f"Polygon vertices: {len(polygon)}")
+        print(f"⏱️  TOTAL: {time.time() - t0:.2f}s")
 
         return {
             "roof_found":       True,

@@ -4,19 +4,17 @@ uvicorn==0.42.0
 python-multipart==0.0.22
 
 # Machine Learning & Computer Vision
-torch==2.11.0
-torchvision==0.26.0
 opencv-python==4.13.0.92
 segment_anything @ git+https://github.com/facebookresearch/segment-anything.git@dca509fe793f601edb92606367a655c15ac00fdf
 
 # Data Science & Solar Math
 pandas
-numpy==2.4.3
+numpy==2.2.6
 requests==2.33.0
 pvlib
 shapely==2.1.2
 matplotlib==3.10.8
-scipy==1.17.1
+scipy==1.15.3
 
 # Utilities
 pydantic==2.12.5

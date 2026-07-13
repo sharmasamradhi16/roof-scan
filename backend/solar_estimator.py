@@ -676,6 +676,20 @@ except ImportError:
 SPACE_BUFFER = 0.20
 
 ############################################################
+# SIMPLE IN-MEMORY CACHE
+# Avoids re-fetching NASA weather + re-training the L5/L7
+# autoencoders when the same (lat, lon, year) is requested
+# again. Rounded to ~1km precision since weather data itself
+# is a coarse grid anyway.
+############################################################
+
+_loss_cache: dict = {}
+_LOSS_CACHE_MAX = 256
+
+def _cache_key(lat, lon, year):
+    return (round(lat, 2), round(lon, 2), year)
+
+############################################################
 # THREE PANEL SPECS
 ############################################################
 
@@ -812,10 +826,18 @@ def compute_l5_l7_losses(lat, lon, year, progress_cb=noop):
             "monthly_summary": None,
         }
 
+    cache_key = _cache_key(lat, lon, year)
+    if cache_key in _loss_cache:
+        progress_cb(4, "Using cached loss model results...")
+        return _loss_cache[cache_key]
+
     torch.manual_seed(42)
     np.random.seed(42)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark     = False
+
+    import time
+    _t0 = time.time()
 
     CAPACITY_KWP      = 100.0
     TILT              = round(abs(lat))
@@ -952,6 +974,8 @@ def compute_l5_l7_losses(lat, lon, year, progress_cb=noop):
     daily_base["L4_Loss_%"]         = PVWATTS_LOSS
 
     progress_cb(4, "Training AI loss models (L5 & L7)...")
+    print(f"⏱️  [solar] weather fetch + L1-L4 loss models: {time.time() - _t0:.2f}s")
+    _t1 = time.time()
 
     # L5
     loss_cols_L5 = ["L1_Loss_%", "L2_Loss_%", "L3_Loss_%"]
@@ -987,12 +1011,21 @@ def compute_l5_l7_losses(lat, lon, year, progress_cb=noop):
     opt     = torch.optim.Adam(
         list(encoder.parameters()) + list(decoder.parameters()), lr=1e-3)
     loss_fn = nn.MSELoss()
+    prev_loss = float("inf")
     for epoch in range(5000):
         opt.zero_grad()
         z    = encoder(X)
         loss = loss_fn(decoder(z), X)
         loss.backward()
         opt.step()
+        # Early stopping: this is a 3-feature, 365-row toy autoencoder —
+        # it converges in a few hundred epochs. Stop once improvement
+        # per epoch is negligible instead of always running all 5000.
+        if epoch % 50 == 0:
+            cur = loss.item()
+            if abs(prev_loss - cur) < 1e-7:
+                break
+            prev_loss = cur
 
     with torch.no_grad():
         latent_raw = encoder(X).numpy().squeeze()
@@ -1056,12 +1089,18 @@ def compute_l5_l7_losses(lat, lon, year, progress_cb=noop):
     opt_L7     = torch.optim.Adam(
         list(phys_enc.parameters()) + list(phys_dec.parameters()), lr=1e-3)
     loss_fn_L7 = nn.MSELoss()
+    prev_loss_L7 = float("inf")
     for epoch in range(5000):
         opt_L7.zero_grad()
         z_p     = phys_enc(X_phys)
         loss_L7 = loss_fn_L7(phys_dec(z_p), X_phys)
         loss_L7.backward()
         opt_L7.step()
+        if epoch % 50 == 0:
+            cur = loss_L7.item()
+            if abs(prev_loss_L7 - cur) < 1e-7:
+                break
+            prev_loss_L7 = cur
 
     with torch.no_grad():
         latent_raw_L7 = phys_enc(X_phys).numpy().squeeze()
@@ -1088,12 +1127,20 @@ def compute_l5_l7_losses(lat, lon, year, progress_cb=noop):
         L7_Gen_MWh    = ("L7_Generation_kWh", lambda x: x.sum() / 1000),
     ).reset_index(level=0, drop=True)
 
-    return {
+    result = {
         "l5_loss_pct":     float(daily_base["L5_Loss_%"].mean()),
         "l7_loss_pct":     float(daily_base["L7_Loss_%"].mean()),
         "daily_base":      daily_base,
         "monthly_summary": monthly_summary,
     }
+    print(f"⏱️  [solar] L5+L7 autoencoder training: {time.time() - _t1:.2f}s")
+    print(f"⏱️  [solar] TOTAL compute_l5_l7_losses: {time.time() - _t0:.2f}s")
+
+    if len(_loss_cache) >= _LOSS_CACHE_MAX:
+        _loss_cache.pop(next(iter(_loss_cache)))  # evict oldest
+    _loss_cache[cache_key] = result
+
+    return result
 
 ############################################################
 # SIZING HELPER
