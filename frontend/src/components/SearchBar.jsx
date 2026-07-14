@@ -2,16 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import { API_URL } from '../lib/api'
 import './SearchBar.css'
-const DEBOUNCE_MS = 1200
-const SUGGEST_TIMEOUT_MS = 20000
 
-function dbgIngest(payload) {
-  fetch(`${API_URL}/__debug_ingest`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionId: '2c68e8', timestamp: Date.now(), ...payload }),
-  }).catch(() => {})
-}
+const DEBOUNCE_MS = 250
+const SUGGEST_TIMEOUT_MS = 6000
 
 export default function SearchBar({ setCoords }) {
   const [query, setQuery]           = useState('')
@@ -24,9 +17,8 @@ export default function SearchBar({ setCoords }) {
   const debounceRef = useRef(null)
   const wrapperRef  = useRef(null)
   const suggestGenRef = useRef(0)
-  const suggestInFlightRef = useRef(0)
+  const abortRef = useRef(null)
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handler = (e) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
@@ -41,72 +33,49 @@ export default function SearchBar({ setCoords }) {
     }
   }, [])
 
-  // Debounced suggest call
   useEffect(() => {
     if (query.trim().length < 3) {
       clearTimeout(debounceRef.current)
       suggestGenRef.current += 1
+      abortRef.current?.abort()
       setSuggestions([])
       setShowDrop(false)
-      if (suggestInFlightRef.current <= 0) {
-        setLoading(false)
-        // #region agent log
-        dbgIngest({ location: 'SearchBar.jsx:query-short', message: 'short query cleared loading', data: { inFlight: suggestInFlightRef.current }, hypothesisId: 'H-short' })
-        // #endregion
-      }
+      setLoading(false)
       return
     }
 
     clearTimeout(debounceRef.current)
     const q = query.trim()
     debounceRef.current = setTimeout(async () => {
+      abortRef.current?.abort()
+      const controller = new AbortController()
+      abortRef.current = controller
+
       const gen = ++suggestGenRef.current
-      suggestInFlightRef.current += 1
       setLoading(true)
       setError(null)
       try {
-        const res = await axios.post(`${API_URL}/suggest`, { query: q }, { timeout: SUGGEST_TIMEOUT_MS })
+        const res = await axios.post(
+          `${API_URL}/suggest`,
+          { query: q },
+          { timeout: SUGGEST_TIMEOUT_MS, signal: controller.signal }
+        )
         if (gen !== suggestGenRef.current) return
         const list = Array.isArray(res.data?.results) ? res.data.results : []
-        // #region agent log
-        dbgIngest({ location: 'SearchBar.jsx:suggest:apply', message: 'applied results', data: { qLen: q.length, count: list.length, gen }, hypothesisId: 'H-stale' })
-        // #endregion
         setSuggestions(list)
         setShowDrop(list.length > 0)
       } catch (err) {
-        // #region agent log
-        dbgIngest({
-          location: 'SearchBar.jsx:suggest:catch',
-          message: 'suggest error',
-          data: { gen, curGen: suggestGenRef.current, stale: gen !== suggestGenRef.current, code: err?.code, isTimeout: err?.code === 'ECONNABORTED' },
-          hypothesisId: 'H-err',
-        })
-        // #endregion
+        if (axios.isCancel(err) || err?.code === 'ERR_CANCELED') return
         if (gen !== suggestGenRef.current) return
         setSuggestions([])
         setShowDrop(false)
         setError('Search service unavailable. Check backend connection.')
       } finally {
-        suggestInFlightRef.current -= 1
-        const cleared = suggestInFlightRef.current <= 0
-        if (cleared) suggestInFlightRef.current = 0
-        if (cleared) setLoading(false)
-        // #region agent log
-        dbgIngest({
-          location: 'SearchBar.jsx:suggest:finally',
-          message: 'suggest request finished',
-          data: { gen, curGen: suggestGenRef.current, stale: gen !== suggestGenRef.current, afterInFlight: suggestInFlightRef.current, clearedLoading: cleared },
-          hypothesisId: 'H-loading',
-          runId: 'post-fix',
-        })
-        // #endregion
+        if (gen === suggestGenRef.current) setLoading(false)
       }
     }, DEBOUNCE_MS)
 
-    return () => {
-      clearTimeout(debounceRef.current)
-      suggestGenRef.current += 1
-    }
+    return () => clearTimeout(debounceRef.current)
   }, [query])
 
   const handleSelect = (item) => {
@@ -148,7 +117,6 @@ export default function SearchBar({ setCoords }) {
         {loading && <span className="search-spinner" />}
       </div>
 
-      {/* DROPDOWN */}
       {showDrop && suggestions.length > 0 && (
         <ul className="suggestions-drop">
           {suggestions.map((item, i) => (

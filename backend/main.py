@@ -89,90 +89,142 @@ def health():
 # GEOCODING — kept exactly from your working code
 ############################################################
 
+def _fetch_nominatim(query):
+    try:
+        response = req_lib.get(
+            "https://nominatim.openstreetmap.org/search",
+            params={"q": query, "format": "json",
+                    "limit": 6, "addressdetails": 1},
+            headers={
+                "User-Agent":      "RoofScan/2.0 (rooftop-area-estimator)",
+                "Accept":          "application/json",
+                "Accept-Language": "en",
+            },
+            timeout=(3, 3.5),
+        )
+        response.raise_for_status()
+        return response.json() if response.text.strip() else []
+    except Exception:
+        return []
+
+
+def _fetch_photon(query):
+    try:
+        response = req_lib.get(
+            "https://photon.komoot.io/api/",
+            params={"q": query, "limit": 6, "lang": "en"},
+            timeout=(3, 3.5),
+        )
+        response.raise_for_status()
+        raw = response.json() if response.text.strip() else {}
+        normalized = []
+        for f in raw.get("features", []):
+            props      = f.get("properties", {})
+            coords_geo = f.get("geometry", {}).get("coordinates", [0, 0])
+            parts      = [props.get(k) for k in
+                          ["name", "street", "city", "state", "country"]
+                          if props.get(k)]
+            normalized.append({
+                "lat":          coords_geo[1],
+                "lon":          coords_geo[0],
+                "display_name": ", ".join(parts),
+                "address": {
+                    "road":    props.get("street", ""),
+                    "city":    props.get("city", ""),
+                    "state":   props.get("state", ""),
+                    "country": props.get("country", ""),
+                },
+            })
+        return normalized
+    except Exception:
+        return []
+
+
+def _fetch_open_meteo(query):
+    try:
+        response = req_lib.get(
+            "https://geocoding-api.open-meteo.com/v1/search",
+            params={"name": query, "count": 6, "language": "en"},
+            timeout=(3, 3.5),
+        )
+        response.raise_for_status()
+        body       = response.json() if response.text.strip() else {}
+        normalized = []
+        for it in body.get("results") or []:
+            lat_g, lon_g = it.get("latitude"), it.get("longitude")
+            if lat_g is None or lon_g is None:
+                continue
+            name    = (it.get("name") or "").strip()
+            admin1  = (it.get("admin1") or "").strip()
+            country = (it.get("country") or "").strip()
+            display = ", ".join(p for p in (name, admin1, country) if p)
+            normalized.append({
+                "lat":          lat_g,
+                "lon":          lon_g,
+                "display_name": display,
+                "address": {
+                    "city":    it.get("admin2") or admin1 or "",
+                    "state":   admin1,
+                    "country": country,
+                },
+            })
+        return normalized
+    except Exception:
+        return []
+
+
 @app.post("/suggest")
 def suggest(req: SuggestRequest):
     try:
-        data       = []
-        nominatim_headers = {
-            "User-Agent":      "RoofScan/2.0 (rooftop-area-estimator)",
-            "Accept":          "application/json",
-            "Accept-Language": "en",
-        }
+        q = req.query.strip()
 
-        try:
-            response = req_lib.get(
-                "https://nominatim.openstreetmap.org/search",
-                params={"q": req.query, "format": "json",
-                        "limit": 6, "addressdetails": 1},
-                headers=nominatim_headers, timeout=(5, 8)
-            )
-            response.raise_for_status()
-            data = response.json() if response.text.strip() else []
-        except Exception:
-            data = []
+        # Query Nominatim and Photon CONCURRENTLY instead of the old
+        # sequential waterfall (Nominatim -> wait -> Photon -> wait ->
+        # Open-Meteo). The old code could take up to ~24s worst case
+        # (3 providers x 8s timeout) whenever the first provider(s)
+        # returned nothing. Now both run in parallel with a tight 3.5s
+        # timeout each, and results are merged (deduped by proximity)
+        # so we surface the best matches from both providers instead of
+        # only ever seeing Photon when Nominatim happened to return
+        # zero results for a query it could have partially matched.
+        from concurrent.futures import ThreadPoolExecutor
 
-        if not data:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            nominatim_future = pool.submit(_fetch_nominatim, q)
+            photon_future    = pool.submit(_fetch_photon, q)
             try:
-                response = req_lib.get(
-                    "https://photon.komoot.io/api/",
-                    params={"q": req.query, "limit": 6, "lang": "en"},
-                    timeout=(5, 8)
-                )
-                response.raise_for_status()
-                raw        = response.json() if response.text.strip() else {}
-                normalized = []
-                for f in raw.get("features", []):
-                    props      = f.get("properties", {})
-                    coords_geo = f.get("geometry", {}).get("coordinates", [0, 0])
-                    parts      = [props.get(k) for k in
-                                  ["name","street","city","state","country"]
-                                  if props.get(k)]
-                    normalized.append({
-                        "lat":          coords_geo[1],
-                        "lon":          coords_geo[0],
-                        "display_name": ", ".join(parts),
-                        "address": {
-                            "road":    props.get("street", ""),
-                            "city":    props.get("city", ""),
-                            "state":   props.get("state", ""),
-                            "country": props.get("country", ""),
-                        }
-                    })
-                data = normalized
+                nominatim_data = nominatim_future.result(timeout=4)
             except Exception:
-                data = []
-
-        if not data:
+                nominatim_data = []
             try:
-                response = req_lib.get(
-                    "https://geocoding-api.open-meteo.com/v1/search",
-                    params={"name": req.query, "count": 6, "language": "en"},
-                    timeout=(5, 8),
-                )
-                response.raise_for_status()
-                body       = response.json() if response.text.strip() else {}
-                normalized = []
-                for it in body.get("results") or []:
-                    lat_g, lon_g = it.get("latitude"), it.get("longitude")
-                    if lat_g is None or lon_g is None:
-                        continue
-                    name    = (it.get("name") or "").strip()
-                    admin1  = (it.get("admin1") or "").strip()
-                    country = (it.get("country") or "").strip()
-                    display = ", ".join(p for p in (name, admin1, country) if p)
-                    normalized.append({
-                        "lat":          lat_g,
-                        "lon":          lon_g,
-                        "display_name": display,
-                        "address": {
-                            "city":    it.get("admin2") or admin1 or "",
-                            "state":   admin1,
-                            "country": country,
-                        },
-                    })
-                data = normalized
+                photon_data = photon_future.result(timeout=4)
             except Exception:
-                data = []
+                photon_data = []
+
+        def _is_dup(item, existing):
+            try:
+                ilat, ilon = float(item["lat"]), float(item["lon"])
+            except (TypeError, ValueError, KeyError):
+                return False
+            for e in existing:
+                try:
+                    elat, elon = float(e["lat"]), float(e["lon"])
+                except (TypeError, ValueError, KeyError):
+                    continue
+                if abs(ilat - elat) < 1e-4 and abs(ilon - elon) < 1e-4:
+                    return True
+            return False
+
+        data = list(nominatim_data)
+        for item in photon_data:
+            if not _is_dup(item, data):
+                data.append(item)
+
+        # Open-Meteo (place/city level, not great for street addresses)
+        # is only used as a last-resort fallback when both real
+        # geocoders returned nothing.
+        if not data:
+            data = _fetch_open_meteo(q)
 
         results = []
         for item in data:

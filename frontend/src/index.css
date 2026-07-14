@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Mono:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Mono:wght@300;400;500&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
   --bg:         #faf7f2;
@@ -10,8 +10,15 @@
   --text:       #1c1410;
   --text-muted: #9c8472;
   --danger:     #b91c1c;
+  /* Playfair — editorial headings only.
+     DM Mono  — labels, tags, coordinates, numeric data (keeps the
+                technical/instrument-panel feel for readouts).
+     Inter    — everything else the person actually reads: inputs,
+                body copy, buttons, list items. Mono-for-everything
+                was the old default and hurt readability. */
   --font-display: 'Playfair Display', serif;
   --font-mono:    'DM Mono', monospace;
+  --font-body:    'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -19,11 +26,13 @@
 html, body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
   touch-action: manipulation;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 ::-webkit-scrollbar { width: 3px; }

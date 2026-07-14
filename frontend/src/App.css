@@ -48,6 +48,14 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  transition: grid-template-columns 0.35s ease;
+}
+
+/* Once a roof has been found, the map has done its job — give the
+   analysis (measurements, edit-polygon, solar tab) the bulk of the
+   screen and shrink the map to a compact reference view. */
+.app-main.has-result {
+  grid-template-columns: 340px 1fr;
 }
 
 /* LEFT */
@@ -219,6 +227,11 @@
     flex-shrink: 0; overflow: hidden;
     /* map takes 38% of screen height */
     height: 38vh; min-height: 180px; max-height: 38vh;
+    transition: height 0.35s ease, max-height 0.35s ease;
+  }
+
+  .app-main.has-result .left-panel {
+    height: 20vh; min-height: 140px; max-height: 20vh;
   }
 
   .right-panel {
@@ -273,6 +286,11 @@
 
   .left-panel {
     height: 36vh; min-height: 170px; max-height: 36vh;
+    transition: height 0.35s ease, max-height 0.35s ease;
+  }
+
+  .app-main.has-result .left-panel {
+    height: 18vh; min-height: 120px; max-height: 18vh;
   }
 
   .panel-label   { font-size: 7px; padding: 6px 10px; letter-spacing: 2px; flex-shrink: 0; }
@@ -296,7 +314,8 @@
   .logo-icon   { font-size: 15px; }
   .header-tag  { display: none; }
 
-  .left-panel  { height: 33vh; min-height: 150px; max-height: 33vh; }
+  .left-panel  { height: 33vh; min-height: 150px; max-height: 33vh; transition: height 0.35s ease, max-height 0.35s ease; }
+  .app-main.has-result .left-panel { height: 16vh; min-height: 110px; max-height: 16vh; }
 
   .panel-label   { font-size: 7px; padding: 5px 8px; letter-spacing: 1px; }
   .tab-btn       { font-size: 8px; letter-spacing: 0.5px; padding: 7px 3px; }
@@ -321,6 +340,11 @@
     flex: none !important;
     height: calc(100dvh - 34px - 28px);
     overflow: hidden;
+    transition: grid-template-columns 0.35s ease;
+  }
+
+  .app-main.has-result {
+    grid-template-columns: 220px 1fr !important;
   }
 
   .left-panel {

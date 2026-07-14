@@ -36,10 +36,9 @@
   border: none;
   outline: none;
   color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font-family: var(--font-body);
+  font-size: 14px;
   padding: 8px 0;
-  letter-spacing: 0.5px;
   min-width: 0;
 }
 
@@ -85,11 +84,11 @@
 
 .sug-icon  { font-size: 11px; flex-shrink: 0; margin-top: 2px; }
 .sug-text  { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.sug-label { font-size: 11px; color: var(--text); font-family: var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sug-full  { font-size: 9px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sug-label { font-size: 13px; font-weight: 500; color: var(--text); font-family: var(--font-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sug-full  { font-size: 11px; font-family: var(--font-body); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.search-error   { font-size: 9px; color: var(--danger); padding: 0 2px; }
-.search-success { font-size: 9px; color: var(--accent2); padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.search-error   { font-size: 11px; font-family: var(--font-body); color: var(--danger); padding: 0 2px; }
+.search-success { font-size: 11px; font-family: var(--font-body); color: var(--accent2); padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Tablet */
 @media (max-width: 800px) {

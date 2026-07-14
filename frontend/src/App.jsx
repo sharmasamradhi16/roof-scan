@@ -42,7 +42,7 @@ export default function App() {
 
       <Header />
 
-      <main className="app-main">
+      <main className={`app-main ${result?.roof_found ? 'has-result' : ''}`}>
         <div className="left-panel">
           <div className="panel-label">01 — SELECT LOCATION</div>
           <SearchBar setCoords={setCoords} />
