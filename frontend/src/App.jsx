@@ -7,6 +7,7 @@ import ControlPanel  from './components/ControlPanel'
 import PolygonEditor from './components/PolygonEditor'
 import useMobileBottomSheet from './hooks/useMobileBottomSheet'
 import useRoofEstimate      from './hooks/useRoofEstimate'
+import useResizablePanels   from './hooks/useResizablePanels'
 import './App.css'
 
 export default function App() {
@@ -21,6 +22,15 @@ export default function App() {
     handlePointerDown,
     handleTouchStart,
   } = useMobileBottomSheet()
+
+  const {
+    shellRef,
+    dragging,
+    rightWidth,
+    hasCustomWidth,
+    onPointerDownDivider,
+    resetWidth,
+  } = useResizablePanels(!!result?.roof_found)
 
   // Called when user clicks "Use This Area" in PolygonEditor
   const handleEditorDone = ({ polygon, area_m2, area_ft2 }) => {
@@ -42,7 +52,28 @@ export default function App() {
 
       <Header />
 
-      <main className={`app-main ${result?.roof_found ? 'has-result' : ''}`}>
+      <div className="step-guide">
+        <div className={`step-item ${!result ? 'current' : result ? 'done' : ''}`}>
+          <span className="step-num">1</span>
+          <span className="step-text">Pick a location &amp; estimate roof</span>
+        </div>
+        <span className="step-arrow">→</span>
+        <div className={`step-item ${result?.roof_found && !showEditor ? 'current' : ''} ${result?.polygon ? 'done' : ''}`}>
+          <span className="step-num">2</span>
+          <span className="step-text">Review / edit the roof outline</span>
+        </div>
+        <span className="step-arrow">→</span>
+        <div className={`step-item ${result?.roof_found ? '' : 'locked'}`}>
+          <span className="step-num">3</span>
+          <span className="step-text">Get solar potential estimate</span>
+        </div>
+      </div>
+
+      <main
+        ref={shellRef}
+        className={`app-main ${result?.roof_found ? 'has-result' : ''} ${dragging ? 'resizing' : ''}`}
+        style={!isMobileSheet ? { gridTemplateColumns: `1fr 10px ${rightWidth}px` } : undefined}
+      >
         <div className="left-panel">
           <div className="panel-label">01 — SELECT LOCATION</div>
           <SearchBar setCoords={setCoords} />
@@ -52,6 +83,20 @@ export default function App() {
             result={result}
           />
         </div>
+
+        {!isMobileSheet && (
+          <div
+            className="panel-divider"
+            onPointerDown={onPointerDownDivider}
+            onDoubleClick={resetWidth}
+            title={hasCustomWidth ? 'Drag to resize · double-click to reset' : 'Drag to resize this panel'}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize panels"
+          >
+            <span className="panel-divider-grip" />
+          </div>
+        )}
 
         <ControlPanel
           coords={coords}

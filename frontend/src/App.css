@@ -41,22 +41,123 @@
   font-family: var(--font-mono);
 }
 
-/* MAIN */
+/* MAIN — 3 columns: map, drag divider, analysis panel.
+   Actual widths are set inline from useResizablePanels once JS runs;
+   these are just the pre-hydration / no-JS fallback. */
 .app-main {
   display: grid;
-  grid-template-columns: 1fr 400px;
+  grid-template-columns: 1fr 10px 400px;
   flex: 1;
   min-height: 0;
   overflow: hidden;
   transition: grid-template-columns 0.35s ease;
 }
 
+/* While the user is actively dragging the divider, kill the transition
+   so the panel tracks the pointer 1:1 instead of lagging/animating. */
+.app-main.resizing { transition: none; }
+
 /* Once a roof has been found, the map has done its job — give the
    analysis (measurements, edit-polygon, solar tab) the bulk of the
-   screen and shrink the map to a compact reference view. */
+   screen and shrink the map to a compact reference view. This only
+   applies while the user hasn't dragged a custom width themselves —
+   inline style (set from useResizablePanels) takes priority. */
 .app-main.has-result {
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: 340px 10px 1fr;
 }
+
+/* DIVIDER — desktop-only drag handle to resize map vs analysis panel */
+.panel-divider {
+  display: none;
+}
+/* Must match the MOBILE_BREAKPOINT (912px) in useMobileBottomSheet.js —
+   below that, React stops rendering the divider and switches to the
+   mobile bottom-sheet layout, so the divider's own display rule must
+   agree or there'd be a gap where it renders in JS but not visually. */
+@media (min-width: 913px) {
+  .panel-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 10px;
+    margin: 0 -5px;
+    cursor: col-resize;
+    position: relative;
+    z-index: 50;
+    touch-action: none;
+  }
+  .panel-divider::before {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0; left: 50%;
+    width: 1px;
+    background: var(--border);
+    transform: translateX(-50%);
+    transition: background 0.15s;
+  }
+  .panel-divider:hover::before,
+  .app-main.resizing .panel-divider::before {
+    background: var(--accent);
+    width: 2px;
+  }
+  .panel-divider-grip {
+    width: 4px;
+    height: 36px;
+    border-radius: 3px;
+    background: var(--border);
+    transition: background 0.15s, height 0.15s;
+    position: relative;
+    z-index: 1;
+  }
+  .panel-divider:hover .panel-divider-grip,
+  .app-main.resizing .panel-divider-grip {
+    background: var(--accent);
+    height: 52px;
+  }
+}
+
+/* STEP GUIDE — quick onboarding strip: what to do first, second, third */
+.step-guide {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 28px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+}
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px 5px 6px;
+  border-radius: 20px;
+  white-space: nowrap;
+  color: var(--text-muted);
+  opacity: 0.6;
+  transition: all 0.2s;
+}
+.step-item.locked { opacity: 0.4; }
+.step-num {
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--border); color: var(--bg);
+  font-size: 11px; font-weight: 600; flex-shrink: 0;
+}
+.step-text { font-size: 11px; letter-spacing: 0.3px; }
+.step-item.current {
+  opacity: 1;
+  background: var(--bg);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+.step-item.current .step-num { background: var(--accent); color: #fff; }
+.step-item.current .step-text { color: var(--text); font-weight: 600; }
+.step-item.done { opacity: 0.85; }
+.step-item.done .step-num { background: var(--accent2); color: #fff; }
+.step-item.done .step-text { color: var(--text); }
+.step-arrow { color: var(--text-muted); font-size: 12px; flex-shrink: 0; }
 
 /* LEFT */
 .left-panel {
@@ -86,11 +187,16 @@
 }
 .result-label { border-top: 1px solid var(--border); }
 
-/* KEY FIX: result-scroll must overflow-y: auto so buttons are reachable */
+/* KEY FIX: result-scroll must overflow-y: auto so buttons are reachable.
+   overscroll-behavior:contain stops the scroll from "leaking" into the
+   page/map behind it once you hit the top/bottom edge on touch devices —
+   that leak is what made scrolling feel broken/janky on phones. */
 .result-scroll {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   min-height: 0;
 }
 
@@ -175,10 +281,17 @@
 .mobile-sheet {
   position: fixed !important;
   bottom: 0; left: 0; right: 0;
+  top: auto !important;
+  /* height comes entirely from the inline sheetStyle (drag-controlled);
+     the base .right-panel height:100% would otherwise fight it since
+     a fixed element has no flow-relative height to inherit from. */
+  height: auto;
   z-index: 500;
   border-radius: 16px 16px 0 0;
   box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .sheet-toggle {
@@ -198,7 +311,7 @@
    TABLET LANDSCAPE ≤ 1024px
 ═══════════════════════════════════════ */
 @media (max-width: 1024px) {
-  .app-main     { grid-template-columns: 1fr 340px; }
+  .app-main     { grid-template-columns: 1fr 10px 340px; }
   .header-logo  { font-size: 19px; }
 }
 
@@ -214,6 +327,12 @@
   .app-header { padding: 9px 14px; flex-shrink: 0; min-height: 44px; }
   .header-logo { font-size: 16px; letter-spacing: 1px; }
   .header-tag  { font-size: 9px; max-width: 160px; text-align: right; }
+
+  .step-guide { padding: 7px 12px; gap: 6px; }
+  .step-num   { width: 17px; height: 17px; font-size: 9px; }
+  .step-text  { font-size: 9.5px; }
+  .step-item  { padding: 4px 8px 4px 4px; }
+  .step-arrow { font-size: 10px; }
 
   .app-main {
     grid-template-columns: 1fr;
@@ -245,6 +364,8 @@
     flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
     min-height: 0;
   }
 
@@ -284,6 +405,10 @@
   .logo-icon   { font-size: 17px; }
   .header-tag  { display: none; }
 
+  .step-guide { padding: 6px 10px; gap: 4px; }
+  .step-text  { font-size: 8.5px; }
+  .step-num   { width: 15px; height: 15px; font-size: 8px; }
+
   .left-panel {
     height: 36vh; min-height: 170px; max-height: 36vh;
     transition: height 0.35s ease, max-height 0.35s ease;
@@ -314,6 +439,11 @@
   .logo-icon   { font-size: 15px; }
   .header-tag  { display: none; }
 
+  .step-guide { padding: 5px 8px; }
+  .step-text  { display: none; }
+  .step-item  { padding: 3px; }
+  .step-num   { width: 16px; height: 16px; }
+
   .left-panel  { height: 33vh; min-height: 150px; max-height: 33vh; transition: height 0.35s ease, max-height 0.35s ease; }
   .app-main.has-result .left-panel { height: 16vh; min-height: 110px; max-height: 16vh; }
 
@@ -332,6 +462,7 @@
 @media (max-height: 430px) and (max-width: 800px) {
   .app-header  { min-height: 34px; padding: 5px 10px; }
   .header-tag  { display: none; }
+  .step-guide  { display: none; }
 
   /* Switch back to side-by-side in landscape */
   .app-main {
