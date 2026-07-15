@@ -108,14 +108,19 @@ export default function PolygonEditor({ roofResult, onDone, onCancel }) {
             type: 'raster',
             tiles: ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
             tileSize: 256, attribution: '© Google',
+            // Cap at the tile source's real max zoom so MapLibre over-scales
+            // the last tile instead of requesting nonexistent z21+ tiles
+            // (which render as blank/white). See MapPicker.jsx for detail.
+            maxzoom: 20,
           },
         },
         layers: [{
           id: 'satellite', type: 'raster', source: 'satellite',
-          minzoom: 0, maxzoom: 21,
+          minzoom: 0, maxzoom: 24,
         }],
       },
       center, zoom: 19, pitch: 0, bearing: 0,
+      maxZoom: 22,
     })
 
     map.addControl(new maplibregl.NavigationControl(), 'top-right')

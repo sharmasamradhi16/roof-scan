@@ -20,6 +20,14 @@ export default function MapPicker({ coords, setCoords, result }) {
             type: 'raster',
             tiles: ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
             tileSize: 256,
+            // Google's satellite tiles don't actually exist past z20 in most
+            // places — without this, MapLibre keeps requesting z21+ tiles
+            // that 404, which renders as blank/white squares once you zoom
+            // in past that point. Capping the source's maxzoom here tells
+            // MapLibre "z20 is the highest real tile"; it then automatically
+            // upscales that last tile for any deeper zoom instead of leaving
+            // it blank, so zooming in stays smooth (just softer past z20).
+            maxzoom: 20,
             attribution: '© Google Satellite'
           }
         },
@@ -28,11 +36,16 @@ export default function MapPicker({ coords, setCoords, result }) {
           type: 'raster',
           source: 'satellite',
           minzoom: 0,
-          maxzoom: 21
+          maxzoom: 24
         }]
       },
       center: [coords.lon, coords.lat],
       zoom: 17,
+      // Let the camera keep zooming past the tile source's native z20 —
+      // MapLibre will over-scale the last real tile rather than show
+      // nothing, so this stays a smooth (if slightly softer) zoom-in
+      // instead of hitting a hard wall.
+      maxZoom: 22,
       pitch: 45,
       bearing: 0,
       antialias: true,

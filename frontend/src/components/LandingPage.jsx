@@ -13,7 +13,6 @@ export default function LandingPage({ onStart }) {
   const [error, setError]             = useState(null)
   const [showDrop, setShowDrop]       = useState(false)
   const [locating, setLocating]       = useState(false)
-  const [audience, setAudience]       = useState('homeowner') // 'homeowner' | 'vendor'
 
   const debounceRef    = useRef(null)
   const wrapperRef      = useRef(null)
@@ -142,7 +141,6 @@ export default function LandingPage({ onStart }) {
         </div>
         <div className="landing-nav-links">
           <a href="#how-it-works">How it works</a>
-          <a href="#audience">Who it's for</a>
           <a href="#faq">FAQ</a>
         </div>
       </nav>
@@ -272,56 +270,6 @@ export default function LandingPage({ onStart }) {
             <div><strong>Shareable report</strong><span>Export a clean PDF for records or clients</span></div>
           </div>
         </div>
-      </section>
-
-      {/* ── AUDIENCE ────────────────────────────────────── */}
-      <section className="landing-audience" id="audience">
-        <h2 className="section-title">Built for both sides of a solar decision</h2>
-        <div className="audience-toggle" role="tablist">
-          <button
-            className={`audience-tab ${audience === 'homeowner' ? 'active' : ''}`}
-            onClick={() => setAudience('homeowner')}
-            type="button"
-          >🏠 Homeowners &amp; businesses</button>
-          <button
-            className={`audience-tab ${audience === 'vendor' ? 'active' : ''}`}
-            onClick={() => setAudience('vendor')}
-            type="button"
-          >🧰 Solar vendors &amp; installers</button>
-        </div>
-
-        {audience === 'homeowner' ? (
-          <div className="audience-panel">
-            <ul>
-              <li>Check your own roof's solar potential before requesting quotes.</li>
-              <li>Understand real usable area — not just rooftop square footage.</li>
-              <li>Get a ballpark on savings and payback to compare against vendor quotes.</li>
-              <li>Share your scan report directly with installers to speed up quoting.</li>
-            </ul>
-          </div>
-        ) : (
-          <div className="audience-panel">
-            <ul>
-              <li>Pre-qualify leads in seconds — scan a client's address before a site visit.</li>
-              <li>Generate consistent, shareable roof reports for every proposal.</li>
-              <li>Speed up quoting with instant area, sun exposure, and system-size estimates.</li>
-              <li>Fine-tune the auto-detected outline to match real obstructions before quoting.</li>
-            </ul>
-          </div>
-        )}
-      </section>
-
-      {/* ── CTA ─────────────────────────────────────────── */}
-      <section className="landing-cta">
-        <h2>Ready to see your roof's solar potential?</h2>
-        <p>Search an address above, or jump straight in with the button below.</p>
-        <button
-          className="cta-button"
-          type="button"
-          onClick={() => onStart(null)}
-        >
-          Start scanning →
-        </button>
       </section>
 
       <footer className="landing-footer" id="faq">
