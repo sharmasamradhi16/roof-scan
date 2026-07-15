@@ -25,6 +25,15 @@ export default function SearchBar({ setCoords }) {
         setShowDrop(false)
       }
     }
+    // Use capture + a small "ignore if inside wrapper" check is already handled
+    // above, but on touch devices `pointerdown` fires (and can close the
+    // dropdown / unmount the <li>) a beat before `click` fires on the same
+    // target. When that happens the tap "falls through" to whatever is now
+    // underneath the finger — which, on the mobile layout, is the map. The
+    // wrapperRef.contains check already protects taps inside the dropdown,
+    // so this was actually safe — the real fix is on the <li> itself (see
+    // handleSelect / onPointerDown below), which stops propagation before
+    // this handler can even run.
     document.addEventListener('mousedown', handler)
     document.addEventListener('pointerdown', handler)
     return () => {
@@ -81,6 +90,13 @@ export default function SearchBar({ setCoords }) {
   const handleSelect = (item) => {
     const lat = typeof item.lat === 'number' ? item.lat : parseFloat(item.lat)
     const lon = typeof item.lon === 'number' ? item.lon : parseFloat(item.lon)
+    // Flag this as a "search selection" moment. MapPicker briefly ignores
+    // its own click-to-move-pin handler right after one of these, so that
+    // if a touch tap on a suggestion also produces a stray click event on
+    // the map underneath (a known mobile browser quirk with absolutely
+    // positioned overlays atop canvas-based maps), it can't silently
+    // override the location the person actually chose.
+    window.__roofscanLastSearchSelect = Date.now()
     setCoords({
       lat: parseFloat(lat.toFixed(8)),
       lon: parseFloat(lon.toFixed(8))
@@ -118,13 +134,15 @@ export default function SearchBar({ setCoords }) {
       </div>
 
       {showDrop && suggestions.length > 0 && (
-        <ul className="suggestions-drop">
+        <ul className="suggestions-drop" onPointerDown={(e) => e.stopPropagation()}>
           {suggestions.map((item, i) => (
             <li
               key={i}
               className="suggestion-item"
-              onPointerDown={(e) => {
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={(e) => {
                 e.preventDefault()
+                e.stopPropagation()
                 handleSelect(item)
               }}
             >

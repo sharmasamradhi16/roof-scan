@@ -66,6 +66,14 @@ export default function MapPicker({ coords, setCoords, result }) {
 
     // Click to move pin
     map.on('click', (e) => {
+      // See SearchBar.handleSelect — on mobile, tapping a search suggestion
+      // can occasionally also dispatch a stray click on the map canvas
+      // beneath the dropdown. Ignore map clicks that land immediately
+      // after a search selection so they can't silently move the pin
+      // back to wherever the finger happened to be.
+      const sinceSelect = Date.now() - (window.__roofscanLastSearchSelect || 0)
+      if (sinceSelect < 500) return
+
       const lat = parseFloat(e.lngLat.lat.toFixed(8))
       const lon = parseFloat(e.lngLat.lng.toFixed(8))
       marker.setLngLat([lon, lat])

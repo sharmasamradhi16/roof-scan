@@ -69,6 +69,12 @@
   max-height: 220px;
   overflow-y: auto;
   box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  /* On mobile the map sits directly beneath this dropdown. Without an
+     explicit touch-action the browser can treat a tap here ambiguously
+     and let it "pass through" as a gesture on whatever's underneath
+     once the list closes — manipulation keeps taps local to this list. */
+  touch-action: manipulation;
+  pointer-events: auto;
 }
 
 .suggestion-item {
@@ -78,6 +84,7 @@
   border-bottom: 1px solid var(--border);
   transition: background 0.15s;
   min-height: 42px;
+  touch-action: manipulation;
 }
 .suggestion-item:last-child { border-bottom: none; }
 .suggestion-item:hover { background: var(--surface); }
