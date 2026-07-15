@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 const STORAGE_KEY = 'roofscan.rightPanelWidth'
-const MIN_RIGHT   = 300
-const MAX_RIGHT   = 900
+const MIN_RIGHT   = 340
+const MAX_RIGHT   = 1000
 const DEFAULT_RIGHT_INITIAL   = 400  // before a result exists
-const DEFAULT_RIGHT_HAS_RESULT = 480 // analysis gets more room once there's a result
+const DEFAULT_RIGHT_HAS_RESULT = 640 // analysis gets the bulk of the screen once there's a result
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
 

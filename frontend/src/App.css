@@ -68,7 +68,7 @@
    applies while the user hasn't dragged a custom width themselves —
    inline style (set from useResizablePanels) takes priority. */
 .app-main.has-result {
-  grid-template-columns: 340px 10px 1fr;
+  grid-template-columns: 260px 10px 1fr;
 }
 
 /* DIVIDER — desktop-only drag handle to resize map vs analysis panel */
@@ -84,8 +84,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 10px;
-    margin: 0 -5px;
+    width: 14px;
+    margin: 0 -7px;
     cursor: col-resize;
     position: relative;
     z-index: 50;
@@ -105,19 +105,32 @@
     background: var(--accent);
     width: 2px;
   }
+  /* Grip is always visible (not just on hover) so people actually
+     discover the panel is resizable — a hover-only affordance is
+     invisible on touch/trackpad until you accidentally find it. */
   .panel-divider-grip {
-    width: 4px;
-    height: 36px;
-    border-radius: 3px;
+    width: 6px;
+    height: 52px;
+    border-radius: 4px;
     background: var(--border);
+    box-shadow: 0 0 0 4px var(--surface);
     transition: background 0.15s, height 0.15s;
     position: relative;
     z-index: 1;
   }
+  .panel-divider-grip::before,
+  .panel-divider-grip::after {
+    content: '';
+    position: absolute;
+    left: 50%; transform: translateX(-50%);
+    width: 2px; height: 2px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
   .panel-divider:hover .panel-divider-grip,
   .app-main.resizing .panel-divider-grip {
     background: var(--accent);
-    height: 52px;
+    height: 64px;
   }
 }
 

@@ -1,9 +1,5 @@
 # Visionary Eyes: Rooftop Segmentation for Solar Panel Installation
 
-## Team Members
-* **Anushka Prajapati** (ID: 202301224)
-* **Suryadeepsinh Gohil** (ID: 202301463)
-
 ## Objective and Description
 * The objective of this application is to develop an end-to-end deep learning solution that addresses a data-driven problem with significant social impact.
 * Specifically, the system is designed to detect and estimate usable rooftop areas for solar panel installation using satellite image segmentation.
