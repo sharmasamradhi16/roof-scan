@@ -13,6 +13,8 @@ export default function SearchBar({ setCoords }) {
   const [error, setError]           = useState(null)
   const [found, setFound]           = useState(null)
   const [showDrop, setShowDrop]     = useState(false)
+  const [locating, setLocating]     = useState(false)
+  const [geoError, setGeoError]     = useState(null)
 
   const debounceRef = useRef(null)
   const wrapperRef  = useRef(null)
@@ -112,6 +114,68 @@ export default function SearchBar({ setCoords }) {
     if (e.key === 'Escape') setShowDrop(false)
   }
 
+  const handleUseMyLocation = () => {
+    setGeoError(null)
+    setError(null)
+    setFound(null)
+    setShowDrop(false)
+
+    if (!('geolocation' in navigator)) {
+      setGeoError('Geolocation is not supported by this browser.')
+      return
+    }
+
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = parseFloat(pos.coords.latitude.toFixed(8))
+        const lon = parseFloat(pos.coords.longitude.toFixed(8))
+
+        // Same guard used for search selections — protects against a
+        // stray map click landing right after this and silently moving
+        // the pin away from the GPS fix.
+        window.__roofscanLastSearchSelect = Date.now()
+        setCoords({ lat, lon })
+        setLocating(false)
+
+        // Best-effort label via reverse geocode so the input shows
+        // something readable instead of raw coordinates. If it fails,
+        // fall back to the coordinates themselves — the pin has already
+        // moved either way, so this is cosmetic only.
+        try {
+          const res = await axios.post(
+            `${API_URL}/reverse`,
+            { lat, lon },
+            { timeout: SUGGEST_TIMEOUT_MS }
+          )
+          const label = res.data?.display_name || res.data?.short_label
+          if (label) {
+            setQuery(res.data?.short_label || label)
+            setFound(label)
+            return
+          }
+        } catch {
+          // ignore — fall through to coordinate label below
+        }
+        setQuery(`${lat}, ${lon}`)
+        setFound('Current location')
+      },
+      (err) => {
+        setLocating(false)
+        if (err.code === err.PERMISSION_DENIED) {
+          setGeoError('Location permission denied. Allow location access in your browser settings to use this.')
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          setGeoError('Could not determine your location. Try again or search manually.')
+        } else if (err.code === err.TIMEOUT) {
+          setGeoError('Location request timed out. Try again.')
+        } else {
+          setGeoError('Could not get your location.')
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    )
+  }
+
   return (
     <div className="searchbar-wrapper" ref={wrapperRef}>
       <div className={`searchbar-row ${showDrop ? 'open' : ''}`}>
@@ -131,6 +195,16 @@ export default function SearchBar({ setCoords }) {
           autoComplete="off"
         />
         {loading && <span className="search-spinner" />}
+        <button
+          type="button"
+          className={`locate-btn ${locating ? 'locating' : ''}`}
+          onClick={handleUseMyLocation}
+          disabled={locating}
+          title="Use my current location"
+          aria-label="Use my current location"
+        >
+          {locating ? <span className="search-spinner" /> : '📍'}
+        </button>
       </div>
 
       {showDrop && suggestions.length > 0 && (
@@ -156,8 +230,9 @@ export default function SearchBar({ setCoords }) {
         </ul>
       )}
 
+      {geoError && <div className="search-error">⚠ {geoError}</div>}
       {error && <div className="search-error">⚠ {error}</div>}
-      {found && !showDrop && (
+      {found && !showDrop && !geoError && (
         <div className="search-success">✓ {found}</div>
       )}
     </div>

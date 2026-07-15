@@ -1,0 +1,19 @@
+services:
+  roofscan-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.sam
+    image: roofscan-backend:latest
+    container_name: roofscan-backend
+    restart: always          # keeps it running forever — restarts on crash AND on machine/Docker reboot
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app                # live-mounts your source so code edits show up without rebuilding
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

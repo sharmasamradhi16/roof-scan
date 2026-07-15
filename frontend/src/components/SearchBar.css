@@ -56,6 +56,28 @@
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.locate-btn {
+  flex-shrink: 0;
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  border-radius: 7px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 2px;
+}
+.locate-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: #fff8f5;
+  transform: scale(1.05);
+}
+.locate-btn:active:not(:disabled) { transform: scale(0.95); }
+.locate-btn:disabled { cursor: wait; opacity: 0.8; }
+.locate-btn.locating { border-color: var(--accent); }
+.locate-btn .search-spinner { width: 13px; height: 13px; }
+
 .suggestions-drop {
   position: absolute;
   top: calc(100% - 5px);
@@ -102,6 +124,7 @@
   .searchbar-wrapper { padding: 7px 12px; }
   .search-input      { font-size: 12px; padding: 7px 0; }
   .suggestions-drop  { left: 12px; right: 12px; max-height: 180px; }
+  .locate-btn        { width: 27px; height: 27px; font-size: 13px; }
 }
 
 /* Phone */
@@ -114,6 +137,7 @@
   .suggestion-item   { padding: 7px 10px; min-height: 38px; }
   .sug-label         { font-size: 10px; }
   .sug-full          { font-size: 8px; }
+  .locate-btn        { width: 25px; height: 25px; font-size: 12px; }
 }
 
 /* Tiny */

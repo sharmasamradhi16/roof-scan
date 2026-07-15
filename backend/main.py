@@ -52,6 +52,10 @@ class EstimateRequest(BaseModel):
 class GeocodeRequest(BaseModel):
     query: str = Field(..., min_length=2)
 
+class ReverseRequest(BaseModel):
+    lat: float = Field(..., ge=-90,  le=90)
+    lon: float = Field(..., ge=-180, le=180)
+
 class SuggestRequest(BaseModel):
     query: str = Field(..., min_length=2)
 
@@ -299,9 +303,50 @@ def geocode(req: GeocodeRequest):
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-############################################################
-# ROOF ESTIMATE
-############################################################
+
+@app.post("/reverse")
+def reverse(req: ReverseRequest):
+    """Turn a GPS lat/lon (e.g. from the browser's 'Use My Location'
+    button) into a readable address, so the search bar can show
+    something meaningful instead of raw coordinates. Best-effort only —
+    the pin has already been placed by the time this is called, so a
+    failure here is cosmetic and the frontend falls back to showing the
+    coordinates themselves."""
+    try:
+        response = req_lib.get(
+            "https://nominatim.openstreetmap.org/reverse",
+            params={
+                "lat": req.lat, "lon": req.lon,
+                "format": "json", "addressdetails": 1, "zoom": 18,
+            },
+            headers={"User-Agent": "RoofScan/2.0", "Accept-Language": "en"},
+            timeout=(5, 8),
+        )
+        data = response.json()
+
+        if not data or "error" in data:
+            raise HTTPException(status_code=404, detail="No address found for this location.")
+
+        addr  = data.get("address", {})
+        parts = []
+        for key in ["building", "road", "neighbourhood", "suburb",
+                    "city", "town", "state", "country"]:
+            val = addr.get(key)
+            if val and val not in parts:
+                parts.append(val)
+
+        return {
+            "lat":          req.lat,
+            "lon":          req.lon,
+            "display_name": data.get("display_name", ""),
+            "short_label":  ", ".join(parts[:4]) if parts
+                            else data.get("display_name", ""),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/estimate")
 def estimate(req: EstimateRequest):
