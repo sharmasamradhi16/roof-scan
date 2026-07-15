@@ -41,7 +41,7 @@
 
 .coord-field input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(194,65,12,0.1);
+  box-shadow: 0 0 0 2px rgba(91,142,224,0.1);
 }
 
 .coord-hint { font-size: 9px; color: var(--text-muted); letter-spacing: 0.5px; text-align: center; font-family: var(--font-mono); }

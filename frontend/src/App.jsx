@@ -5,12 +5,15 @@ import Header        from './components/Header'
 import Footer        from './components/Footer'
 import ControlPanel  from './components/ControlPanel'
 import PolygonEditor from './components/PolygonEditor'
+import LandingPage   from './components/LandingPage'
 import useMobileBottomSheet from './hooks/useMobileBottomSheet'
 import useRoofEstimate      from './hooks/useRoofEstimate'
 import useResizablePanels   from './hooks/useResizablePanels'
 import './App.css'
 
 export default function App() {
+  // 'landing' = onboarding/marketing page shown first; 'app' = the scan tool.
+  const [view, setView]         = useState('landing')
   const [coords, setCoords]     = useState({ lat: 18.4742, lon: 73.8819 })
   const [showEditor, setEditor] = useState(false)
 
@@ -65,6 +68,25 @@ export default function App() {
     if (loading) setMapLocked(false)
   }, [loading])
 
+  // Landing page → app: if the person searched/located a spot on the
+  // landing page we already have coords for it, so move straight past
+  // step 1 into a fresh estimate. If they just clicked "start scanning"
+  // with no location chosen, land on the tool with the default view.
+  const handleLandingStart = (landingCoords) => {
+    if (landingCoords) {
+      setCoords(landingCoords)
+      setMapLocked(false)
+      setView('app')
+      estimateRoof(landingCoords)
+    } else {
+      setView('app')
+    }
+  }
+
+  if (view === 'landing') {
+    return <LandingPage onStart={handleLandingStart} />
+  }
+
   return (
     <div className="app-shell">
 
@@ -77,7 +99,7 @@ export default function App() {
         />
       )}
 
-      <Header />
+      <Header onHome={() => setView('landing')} />
 
       <div className="step-guide">
         <div className={`step-item ${!result ? 'current' : result ? 'done' : ''}`}>

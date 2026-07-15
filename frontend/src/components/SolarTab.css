@@ -51,7 +51,7 @@
 
 .solar-bill-input-wrap:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(194,65,12,0.12);
+  box-shadow: 0 0 0 3px rgba(91,142,224,0.12);
 }
 
 .solar-bill-prefix {
@@ -125,8 +125,8 @@
   border: 1px solid var(--border); border-radius: 8px;
   cursor: pointer; transition: all 0.2s; font-family: var(--font-mono);
 }
-.panel-tab:hover { border-color: var(--accent); background: #fff8f5; }
-.panel-tab.active { border-color: var(--accent); background: #fff8f5; box-shadow: 0 2px 8px rgba(194,65,12,0.15); }
+.panel-tab:hover { border-color: var(--accent); background: #eef4fa; }
+.panel-tab.active { border-color: var(--accent); background: #eef4fa; box-shadow: 0 2px 8px rgba(91,142,224,0.15); }
 .pt-watt { font-size: 16px; font-weight: 700; color: var(--accent); font-family: var(--font-display); }
 .pt-name { font-size: 9px; color: var(--text-muted); letter-spacing: 0.3px; }
 
@@ -145,7 +145,7 @@
 .solar-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-bottom: 1px solid var(--border); }
 .solar-card  { padding: 14px 13px; display: flex; flex-direction: column; gap: 6px; }
 .solar-card.conservative { border-right: 1px solid var(--border); background: var(--surface); }
-.solar-card.optimistic   { background: #fff8f5; }
+.solar-card.optimistic   { background: #eef4fa; }
 
 .sc-tag   { font-size: 9.5px; letter-spacing: 1.5px; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase; font-weight: 700; }
 .sc-model { font-size: 12px; color: var(--accent); font-family: var(--font-mono); margin-bottom: 3px; font-weight: 600; }
@@ -217,10 +217,10 @@
   width: 100%; background: var(--accent); border: none; color: #fff;
   font-family: var(--font-mono); font-size: 13px; letter-spacing: 2px;
   padding: 15px; border-radius: 8px; cursor: pointer; font-weight: 700;
-  transition: all 0.2s; box-shadow: 0 2px 12px rgba(194,65,12,0.3);
+  transition: all 0.2s; box-shadow: 0 2px 12px rgba(91,142,224,0.3);
   margin-top: 4px;
 }
-.solar-calculate-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(194,65,12,0.4); }
+.solar-calculate-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(91,142,224,0.4); }
 .solar-calculate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 /* ══════════════════════════════════════════

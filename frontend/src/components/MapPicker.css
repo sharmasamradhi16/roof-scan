@@ -11,7 +11,7 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 999;
-  background: rgba(250,247,242,0.92);
+  background: rgba(246,249,252,0.92);
   color: var(--accent);
   font-size: 11px;
   letter-spacing: 1px;
@@ -39,7 +39,7 @@
   border: 2px solid #fff;
   transform: rotate(-45deg);
   position: absolute; top: 0; left: 0;
-  box-shadow: 0 0 12px rgba(194,65,12,0.6);
+  box-shadow: 0 0 12px rgba(91,142,224,0.6);
 }
 
 .marker-pulse {

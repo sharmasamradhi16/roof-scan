@@ -146,10 +146,10 @@
   font-size: 13px; letter-spacing: 1.5px;
   padding: 13px; border-radius: 8px;
   cursor: pointer; transition: all 0.2s;
-  box-shadow: 0 2px 12px rgba(194,65,12,0.25);
+  box-shadow: 0 2px 12px rgba(91,142,224,0.25);
   font-weight: 700;
 }
-.solar-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(194,65,12,0.35); }
+.solar-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(91,142,224,0.35); }
 
 /* ═══════════════════════════
    TABLET ≤ 800px

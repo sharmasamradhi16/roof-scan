@@ -1,15 +1,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Mono:wght@300;400;500&family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg:         #faf7f2;
-  --surface:    #f3ede3;
-  --surface2:   #ebe2d4;
-  --border:     #ddd0bc;
-  --accent:     #c2410c;
-  --accent2:    #15803d;
-  --text:       #1c1410;
-  --text-muted: #9c8472;
-  --danger:     #b91c1c;
+  /* Pastel, "sky & solar" palette — soft and easy on the eyes for long
+     analysis sessions, while keeping enough contrast for readability.
+     --accent  = sky blue (locations, primary actions)
+     --accent2 = mint/sage (solar, positive/eco outcomes)
+     --sun     = warm pastel amber (solar-potential highlights) */
+  --bg:         #f6f9fc;
+  --surface:    #eef4fa;
+  --surface2:   #e4edf6;
+  --border:     #d7e3ee;
+  --accent:     #5b8ee0;
+  --accent-soft:#dce8fb;
+  --accent2:    #4fae8c;
+  --accent2-soft:#dcf1e8;
+  --sun:        #f0a860;
+  --sun-soft:   #fbe8d3;
+  --text:       #24313d;
+  --text-muted: #7c8fa3;
+  --danger:     #e2685f;
   /* Playfair — editorial headings only.
      DM Mono  — labels, tags, coordinates, numeric data (keeps the
                 technical/instrument-panel feel for readouts).
@@ -49,12 +58,12 @@ html, body {
   color: var(--accent) !important;
 }
 .maplibregl-ctrl-attrib {
-  background: rgba(250,247,242,0.9) !important;
+  background: rgba(246,249,252,0.9) !important;
   color: var(--text-muted) !important;
   font-size: 9px !important;
 }
 .maplibregl-ctrl-scale {
-  background: rgba(250,247,242,0.9) !important;
+  background: rgba(246,249,252,0.9) !important;
   border-color: var(--accent) !important;
   color: var(--accent) !important;
   font-size: 9px !important;

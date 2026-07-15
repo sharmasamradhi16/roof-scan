@@ -1,11 +1,17 @@
-export default function Header() {
+export default function Header({ onHome }) {
   return (
     <header className="app-header">
-      <div className="header-logo">
+      <button
+        type="button"
+        className="header-logo header-logo-btn"
+        onClick={onHome}
+        title="Back to home"
+        aria-label="Back to home"
+      >
         <span className="logo-icon">⬡</span>
         <span className="logo-text">ROOF<span className="accent">SCAN</span></span>
-      </div>
-      <div className="header-tag">Satellite Rooftop Area Estimator</div>
+      </button>
+      <div className="header-tag">Satellite Rooftop &amp; Solar Estimator</div>
     </header>
   )
 }
