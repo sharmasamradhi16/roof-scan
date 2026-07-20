@@ -7,32 +7,6 @@
 * The project serves as a complete full-stack application, incorporating both deployed front-end and back-end components.
 * The deep learning solution is fully deployed as a functional web application.
 
-## Live Deployment
-* **Web Application (Frontend):** [https://it-549-project-rooftop-segmentation.vercel.app](https://it-549-project-rooftop-segmentation.vercel.app)
-  * *Use this link to interact with the map, run the segmentation, and calculate solar ROI.*
-* **Model API (Backend):** [https://suryadeep07-rooftop-segmentation.hf.space](https://suryadeep07-rooftop-segmentation.hf.space)
-  * *The dedicated Hugging Face Space hosting the fine-tuned segmentation models and FastAPI endpoints.*
-
-## Instructions to Install and Run
-### Prerequisites
-* Python 3.11+
-* Node.js and npm
-* Git
-
-### Backend Setup (FastAPI & Deep Learning)
-1. Navigate to the backend directory: `cd backend`
-2. Create a virtual environment: `python -m venv venv`
-3. Activate the virtual environment:
-   * **Windows:** `venv\Scripts\activate`
-   * **macOS/Linux:** `source venv/bin/activate`
-4. Install the required Python dependencies: `pip install -r requirements.txt`
-5. Start the backend server: `uvicorn main:app --reload`
-
-### Frontend Setup (React/Vite)
-1. Navigate to the frontend directory: `cd frontend`
-2. Install the necessary Node modules: `npm install`
-3. Start the development server: `npm run dev`
-
 ## Details on How to Use the Application
 1. **Launch the Application:** Open your browser and navigate to the frontend web application interface.
 2. **Locate Target Property:** Use the interactive map to drop a pin on the target residential building (or use the search functionality).
